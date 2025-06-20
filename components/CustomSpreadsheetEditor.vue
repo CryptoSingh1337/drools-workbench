@@ -1,0 +1,122 @@
+<script lang="ts" setup>
+import { onMounted, onBeforeUnmount, ref } from "vue";
+
+import { createUniver, defaultTheme, LocaleType, merge } from "@univerjs/presets";
+import type { FUniver, Univer } from "@univerjs/presets";
+import type { Workbook } from "@univerjs/presets";
+
+import { UniverSheetsCorePreset } from "@univerjs/presets/preset-sheets-core";
+import UniverPresetSheetsCoreEnUS from "@univerjs/presets/preset-sheets-core/locales/en-US";
+import "@univerjs/presets/lib/styles/preset-sheets-core.css";
+
+import { UniverSheetsFilterPreset } from "@univerjs/presets/preset-sheets-filter";
+import sheetsFilterEnUS from "@univerjs/presets/preset-sheets-filter/locales/en-US";
+import "@univerjs/presets/lib/styles/preset-sheets-filter.css";
+
+import { UniverSheetsHyperLinkPreset } from "@univerjs/presets/preset-sheets-hyper-link";
+import sheetsHyperLinkEnUS from "@univerjs/presets/preset-sheets-hyper-link/locales/en-US";
+import "@univerjs/presets/lib/styles/preset-sheets-hyper-link.css";
+
+import { WORKBOOK_DATA } from "@/helper/data";
+import { parseToUniverWorkbookData } from "@/helper/spreadsheet";
+
+const container = ref<HTMLElement | null>(null);
+
+let univerInstance: Univer | null = null;
+let univerAPIInstance: FUniver | null = null;
+
+onMounted(() => {
+  const { univer, univerAPI } = createUniver({
+    locale: LocaleType.EN_US,
+    locales: {
+      [LocaleType.EN_US]: merge(
+        {},
+        UniverPresetSheetsCoreEnUS,
+        sheetsFilterEnUS,
+        sheetsHyperLinkEnUS
+      ),
+    },
+    theme: defaultTheme,
+    presets: [
+      UniverSheetsCorePreset({
+        container: container.value as HTMLElement,
+      }),
+      UniverSheetsFilterPreset(),
+      UniverSheetsHyperLinkPreset(),
+    ],
+  });
+  console.log("Univer created successfully");
+  console.log("Creating workbook with data:", WORKBOOK_DATA);
+  univerAPI.createWorkbook(WORKBOOK_DATA);
+  univerInstance = univer;
+  univerAPIInstance = univerAPI;
+  console.log("Workbook created successfully");
+  setTimeout(() => {
+    const activeWorkbook = univerAPI.getActiveWorkbook();
+    console.log("Active workbook:", activeWorkbook);
+    if (activeWorkbook) {
+      const activeSheet = activeWorkbook.getActiveSheet();
+      console.log("Active sheet:", activeSheet);
+    }
+  }, 8000);
+});
+
+onBeforeUnmount(() => {
+  univerInstance?.dispose();
+  univerAPIInstance?.dispose();
+  univerInstance = null;
+  univerAPIInstance = null;
+});
+
+async function handleFileChange(event: Event) {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+  if (file) {
+    console.log("Selected file:", file.name);
+    const { workbook, merges } = await parseToUniverWorkbookData(file);
+    const wb = univerAPIInstance?.getActiveWorkbook() as Workbook;
+    const unitId = wb.getId();
+    if (unitId) {
+      if (univerAPIInstance?.disposeUnit(unitId)) {
+        const fWorkbook = univerAPIInstance.createWorkbook(workbook);
+        for (let sheetKey in merges) {
+          const fWorksheet = fWorkbook.getSheetBySheetId(sheetKey);
+          const ranges = merges[sheetKey];
+          ranges.forEach((range) => {
+            const fRange = fWorksheet.getRange(range);
+            fRange.merge();
+          });
+        }
+      }
+    }
+  }
+}
+</script>
+
+<template>
+  <div class="flex min-h-screen flex-col">
+    <div class="grid h-12 grid-cols-12 gap-2 p-2">
+      <label
+        for="file-upload"
+        class="placeholder:text-dimmed text-highlighted bg-elevated ring-accented focus-visible:ring-primary w-full gap-1.5 rounded-md border-0 px-2.5 py-1.5 text-sm ring transition-colors ring-inset focus:outline-none focus-visible:ring-2 focus-visible:ring-inset disabled:cursor-not-allowed disabled:opacity-75"
+      >
+        Import
+      </label>
+      <input
+        type="file"
+        id="file-upload"
+        accept=".xlsx"
+        class="hidden"
+        @change="handleFileChange"
+      />
+      <UButton>Export</UButton>
+    </div>
+    <div ref="container" class="spreadsheet-container"></div>
+  </div>
+</template>
+
+<style scoped>
+.spreadsheet-container {
+  height: calc(100vh - 48px);
+}
+</style>
