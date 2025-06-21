@@ -11,7 +11,6 @@ export const useSpreadsheetData = () => {
     merges: Record<string, string[]>;
   }> => {
     const buffer = await file.arrayBuffer();
-    const workbook = XLSX.read(buffer, { type: "buffer" });
     const univerWorkbook: IntermediateWorkbook = {
       workbook: {
         name: file.name,
@@ -19,7 +18,8 @@ export const useSpreadsheetData = () => {
         sheetOrder: [],
       },
     };
-    const sheets = xlsxToInternalSheets(workbook);
+    const sheets = await xlsxToInternalSheets(buffer);
+    console.log("Intermediate sheet representation", sheets);
     sheets.forEach((sheet) => {
       const cellData: IntermediateCell[] = [];
       for (let rowsKey in sheet.rows) {
