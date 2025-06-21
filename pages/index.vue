@@ -16,7 +16,7 @@ const breadcrumbLinks = computed(() => [
 ]);
 
 const searchQuery = ref("");
-const selectedView = ref<"grid" | "list">("grid");
+const selectedView = ref<string>("grid");
 const selectedItems = ref<Set<string>>(new Set());
 
 const filteredFiles = computed(() => {
@@ -192,19 +192,7 @@ const viewOptions = [
                 placeholder="Search files and folders..."
                 icon="i-heroicons-magnifying-glass"
                 size="lg"
-                :ui="{ icon: { trailing: { pointer: '' } } }"
-              >
-                <template #trailing>
-                  <UButton
-                    v-show="searchQuery !== ''"
-                    color="primary"
-                    variant="link"
-                    icon="i-heroicons-x-mark-20-solid"
-                    :padded="false"
-                    @click="searchQuery = ''"
-                  />
-                </template>
-              </UInput>
+              />
             </div>
             <div class="flex items-center gap-2">
               <UButton
