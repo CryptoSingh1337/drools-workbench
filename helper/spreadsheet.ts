@@ -4,10 +4,13 @@ import { type IWorkbookData, LocaleType } from "@univerjs/presets";
 import type { IWorksheetData } from "@univerjs/presets";
 import type { WorkBook, WorkSheet } from "xlsx";
 
+const importStyle = false;
+
 export function xlsxToUniver(data: IntermediateWorkbook): {
   workbook: IWorkbookData;
   merges: Record<string, string[]>;
 } {
+  const start = performance.now()
   const workbook: IWorkbookData = {
     id: data.workbook.name,
     sheetOrder: data.workbook.sheetOrder,
@@ -25,7 +28,7 @@ export function xlsxToUniver(data: IntermediateWorkbook): {
   };
   const merges: Record<string, string[]> = {};
   for (let sheetKey in data.workbook.sheets) {
-    console.info("Reading", sheetKey);
+    console.info("Reading - ", sheetKey);
     merges[sheetKey] = data.workbook.sheets[sheetKey].merges;
     workbook.sheets[sheetKey] = {
       name: sheetKey,
@@ -51,7 +54,7 @@ export function xlsxToUniver(data: IntermediateWorkbook): {
       },
       rightToLeft: 0,
     } as IWorksheetData;
-    console.info("Cell data", data.workbook.sheets[sheetKey].cellData);
+    console.info("Cell data - ", data.workbook.sheets[sheetKey].cellData);
     data.workbook.sheets[sheetKey].cellData.forEach((cell) => {
       const rowKey = `${cell.r}`;
       const colKey = `${cell.c}`;
@@ -67,6 +70,7 @@ export function xlsxToUniver(data: IntermediateWorkbook): {
       }
     });
   }
+  console.debug(`Time taken (xlsxToUniver): ${performance.now() - start} ms`)
   return {
     workbook,
     merges,
@@ -74,10 +78,15 @@ export function xlsxToUniver(data: IntermediateWorkbook): {
 }
 
 export async function xlsxToInternalSheets(buffer: ArrayBuffer): Promise<Sheet[]> {
+  const start = performance.now()
+  console.debug(`Importing styles: ${importStyle}`)
   let out: Sheet[] = [];
   const wb = XLSX.read(buffer, { type: "buffer" });
-  const workbookExcelJS = new ExcelJS.Workbook();
-  await workbookExcelJS.xlsx.load(buffer);
+  let workbookExcelJs: ExcelJS.Workbook
+  if (importStyle) {
+    workbookExcelJs = new ExcelJS.Workbook();
+    await workbookExcelJs.xlsx.load(buffer);
+  }
   wb.SheetNames.forEach(function (name: string) {
     let o: Sheet = {
       name: name,
@@ -96,15 +105,18 @@ export async function xlsxToInternalSheets(buffer: ArrayBuffer): Promise<Sheet[]
       header: 1,
       range: range,
     });
-    const sheetExcelJS = workbookExcelJS.getWorksheet(name);
+    let sheetExcelJs: ExcelJS.Worksheet|undefined
+    if (importStyle) {
+      sheetExcelJs = workbookExcelJs.getWorksheet(name);
+    }
     aoa.forEach(function (r: any, i) {
       let cells: Record<string, Cell> = {};
       r.forEach(function (c: any, j: any) {
         cells[j] = {
           text: c || String(c),
         };
-        if (sheetExcelJS) {
-          const cell = sheetExcelJS.getRow(i + 1).getCell(j + 1);
+        if (sheetExcelJs) {
+          const cell = sheetExcelJs.getRow(i + 1).getCell(j + 1);
           cells[j].style = {
             font: cell.font,
             fill: cell.fill,
@@ -139,41 +151,32 @@ export async function xlsxToInternalSheets(buffer: ArrayBuffer): Promise<Sheet[]
     });
     out.push(o);
   });
+  console.debug(`Time taken (xlsxToInternalSheets): ${performance.now() - start} ms`)
   return out;
 }
 
 export function univerToXlsx(workbookData: IWorkbookData): XLSX.WorkBook {
+  const start = performance.now()
   const out: WorkBook = XLSX.utils.book_new();
   const sheets = workbookData.sheets;
   Object.values(sheets).forEach((sheet) => {
     const ws: WorkSheet = {};
     let minCoord = { r: Infinity, c: Infinity };
     let maxCoord = { r: 0, c: 0 };
-
     const cellData = sheet.cellData || {};
-
-    // Iterate over rows
     Object.keys(cellData).forEach((rowKey) => {
       const row = cellData[rowKey];
       const r = parseInt(rowKey);
-
-      // Iterate over columns in that row
       Object.keys(row).forEach((colKey) => {
         const c = parseInt(colKey);
         const cell = row[colKey];
-
         const cellRef = XLSX.utils.encode_cell({ r, c });
-
-        // Update bounds
         if (r < minCoord.r) minCoord.r = r;
         if (c < minCoord.c) minCoord.c = c;
         if (r > maxCoord.r) maxCoord.r = r;
         if (c > maxCoord.c) maxCoord.c = c;
-
-        // Determine value and type
         let value = cell.v ?? cell.m ?? "";
         let type = "s";
-
         if (value === "") {
           type = "z";
         } else if (typeof value === "number" || !isNaN(Number(value))) {
@@ -186,17 +189,12 @@ export function univerToXlsx(workbookData: IWorkbookData): XLSX.WorkBook {
           value = value.toString().toLowerCase() === "true";
           type = "b";
         }
-
         ws[cellRef] = { v: value, t: type };
-
-        // Formula
         if (cell.f) {
           ws[cellRef].f = cell.f;
         }
       });
     });
-
-    // Merges
     if (sheet.mergeData) {
       ws["!merges"] = [];
       Object.values(sheet.mergeData).forEach((merge) => {
@@ -206,8 +204,6 @@ export function univerToXlsx(workbookData: IWorkbookData): XLSX.WorkBook {
         });
       });
     }
-
-    // Set sheet bounds
     if (minCoord.r <= maxCoord.r && minCoord.c <= maxCoord.c) {
       ws["!ref"] = XLSX.utils.encode_range({ s: minCoord, e: maxCoord });
     } else {
@@ -215,5 +211,6 @@ export function univerToXlsx(workbookData: IWorkbookData): XLSX.WorkBook {
     }
     XLSX.utils.book_append_sheet(out, ws, sheet.name);
   });
+  console.debug(`Time taken (univerToXlsx): ${performance.now() - start} ms`)
   return out;
 }
