@@ -27,7 +27,7 @@ let univerAPIInstance: FUniver | null = null;
 const { importFile, exportFile } = useSpreadsheetData();
 
 onMounted(() => {
-  const start = performance.now()
+  const start = performance.now();
   const { univer, univerAPI } = createUniver({
     locale: LocaleType.EN_US,
     locales: {
@@ -54,7 +54,7 @@ onMounted(() => {
   const activeWorkbook = univerAPI.getActiveWorkbook();
   filename.value = activeWorkbook.name || uuidv4();
   console.info("Workbook created successfully");
-  console.debug(`Time taken for univer initialization: ${performance.now() - start} ms`)
+  console.debug(`Time taken for univer initialization: ${performance.now() - start} ms`);
 });
 
 onBeforeUnmount(() => {
@@ -65,7 +65,7 @@ onBeforeUnmount(() => {
 });
 
 async function handleFileChange(event: Event) {
-  const start = performance.now()
+  const start = performance.now();
   const target = event.target as HTMLInputElement;
   const file = target.files?.[0];
   if (file) {
@@ -87,18 +87,18 @@ async function handleFileChange(event: Event) {
         }
       }
     }
-    console.info(`Successfully imported: ${file.name}`)
+    console.info(`Successfully imported: ${file.name}`);
   }
-  console.debug(`Time taken to load: ${performance.now() - start} ms`)
+  console.debug(`Time taken to load: ${performance.now() - start} ms`);
 }
 
 function handleExport() {
-  const start = performance.now()
+  const start = performance.now();
   if (univerAPIInstance) {
     const activeWorkbook = univerAPIInstance.getActiveWorkbook();
     exportFile(activeWorkbook.save());
   }
-  console.debug(`Time taken to export: ${performance.now() - start} ms`)
+  console.debug(`Time taken to export: ${performance.now() - start} ms`);
 }
 </script>
 

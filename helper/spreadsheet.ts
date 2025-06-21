@@ -10,7 +10,7 @@ export function xlsxToUniver(data: IntermediateWorkbook): {
   workbook: IWorkbookData;
   merges: Record<string, string[]>;
 } {
-  const start = performance.now()
+  const start = performance.now();
   const workbook: IWorkbookData = {
     id: data.workbook.name,
     sheetOrder: data.workbook.sheetOrder,
@@ -70,7 +70,7 @@ export function xlsxToUniver(data: IntermediateWorkbook): {
       }
     });
   }
-  console.debug(`Time taken (xlsxToUniver): ${performance.now() - start} ms`)
+  console.debug(`Time taken (xlsxToUniver): ${performance.now() - start} ms`);
   return {
     workbook,
     merges,
@@ -78,11 +78,11 @@ export function xlsxToUniver(data: IntermediateWorkbook): {
 }
 
 export async function xlsxToInternalSheets(buffer: ArrayBuffer): Promise<Sheet[]> {
-  const start = performance.now()
-  console.debug(`Importing styles: ${importStyle}`)
+  const start = performance.now();
+  console.debug(`Importing styles: ${importStyle}`);
   let out: Sheet[] = [];
   const wb = XLSX.read(buffer, { type: "buffer" });
-  let workbookExcelJs: ExcelJS.Workbook
+  let workbookExcelJs: ExcelJS.Workbook;
   if (importStyle) {
     workbookExcelJs = new ExcelJS.Workbook();
     await workbookExcelJs.xlsx.load(buffer);
@@ -105,7 +105,7 @@ export async function xlsxToInternalSheets(buffer: ArrayBuffer): Promise<Sheet[]
       header: 1,
       range: range,
     });
-    let sheetExcelJs: ExcelJS.Worksheet|undefined
+    let sheetExcelJs: ExcelJS.Worksheet | undefined;
     if (importStyle) {
       sheetExcelJs = workbookExcelJs.getWorksheet(name);
     }
@@ -151,12 +151,12 @@ export async function xlsxToInternalSheets(buffer: ArrayBuffer): Promise<Sheet[]
     });
     out.push(o);
   });
-  console.debug(`Time taken (xlsxToInternalSheets): ${performance.now() - start} ms`)
+  console.debug(`Time taken (xlsxToInternalSheets): ${performance.now() - start} ms`);
   return out;
 }
 
 export function univerToXlsx(workbookData: IWorkbookData): XLSX.WorkBook {
-  const start = performance.now()
+  const start = performance.now();
   const out: WorkBook = XLSX.utils.book_new();
   const sheets = workbookData.sheets;
   Object.values(sheets).forEach((sheet) => {
@@ -211,6 +211,6 @@ export function univerToXlsx(workbookData: IWorkbookData): XLSX.WorkBook {
     }
     XLSX.utils.book_append_sheet(out, ws, sheet.name);
   });
-  console.debug(`Time taken (univerToXlsx): ${performance.now() - start} ms`)
+  console.debug(`Time taken (univerToXlsx): ${performance.now() - start} ms`);
   return out;
 }

@@ -8,7 +8,7 @@ export default defineNuxtConfig({
   build: {
     transpile: ["@univerjs/presets"],
   },
-  modules: ["@nuxt/ui"],
+  modules: ["@nuxt/ui", "@pinia/nuxt"],
   // Vite optimizations
   vite: {
     optimizeDeps: {
