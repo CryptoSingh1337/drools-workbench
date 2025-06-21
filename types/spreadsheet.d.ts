@@ -10,6 +10,7 @@ type Row = {
 
 type Cell = {
   text?: string;
+  style?: any;
   merge?: [number, number];
 };
 
@@ -19,6 +20,7 @@ type IntermediateCell = {
   v: {
     v: string | number | boolean;
   };
+  style?: any;
 };
 
 type IntermediateSheet = {

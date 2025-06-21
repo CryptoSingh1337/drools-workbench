@@ -1,4 +1,5 @@
 import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import { type IWorkbookData, LocaleType } from "@univerjs/presets";
 import type { IWorksheetData } from "@univerjs/presets";
 import type { WorkBook, WorkSheet } from "xlsx";
@@ -72,8 +73,11 @@ export function xlsxToUniver(data: IntermediateWorkbook): {
   };
 }
 
-export function xlsxToInternalSheets(wb: XLSX.WorkBook): Sheet[] {
+export async function xlsxToInternalSheets(buffer: ArrayBuffer): Promise<Sheet[]> {
   let out: Sheet[] = [];
+  const wb = XLSX.read(buffer, { type: "buffer" });
+  const workbookExcelJS = new ExcelJS.Workbook();
+  await workbookExcelJS.xlsx.load(buffer);
   wb.SheetNames.forEach(function (name: string) {
     let o: Sheet = {
       name: name,
@@ -92,12 +96,22 @@ export function xlsxToInternalSheets(wb: XLSX.WorkBook): Sheet[] {
       header: 1,
       range: range,
     });
+    const sheetExcelJS = workbookExcelJS.getWorksheet(name);
     aoa.forEach(function (r: any, i) {
       let cells: Record<string, Cell> = {};
       r.forEach(function (c: any, j: any) {
         cells[j] = {
           text: c || String(c),
         };
+        if (sheetExcelJS) {
+          const cell = sheetExcelJS.getRow(i + 1).getCell(j + 1);
+          cells[j].style = {
+            font: cell.font,
+            fill: cell.fill,
+            border: cell.border,
+            alignment: cell.alignment,
+          };
+        }
         let cellRef = XLSX.utils.encode_cell({
           r: i,
           c: j,
