@@ -128,7 +128,13 @@ export async function parseToUniverWorkbookData(file: File): Promise<{
       if (!workbook.sheets[sheetKey].cellData[rowKey]) {
         workbook.sheets[sheetKey].cellData[rowKey] = {};
       }
-      workbook.sheets[sheetKey].cellData[rowKey][colKey] = cell.v;
+      if (String(cell.v.v).startsWith("=")) {
+        workbook.sheets[sheetKey].cellData[rowKey][colKey] = {
+          f: cell.v.v
+        }
+      } else {
+        workbook.sheets[sheetKey].cellData[rowKey][colKey] = cell.v;
+      }
     });
   }
   return {
