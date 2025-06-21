@@ -21,7 +21,7 @@ import "@univerjs/presets/lib/styles/preset-sheets-hyper-link.css";
 import { WORKBOOK_DATA } from "@/helper/data";
 
 const container = ref<HTMLElement | null>(null);
-const filename = ref<string>('')
+const filename = ref<string>("");
 
 let univerInstance: Univer | null = null;
 let univerAPIInstance: FUniver | null = null;
@@ -54,7 +54,7 @@ onMounted(() => {
   univerInstance = univer;
   univerAPIInstance = univerAPI;
   const activeWorkbook = univerAPI.getActiveWorkbook();
-  filename.value = activeWorkbook.name || uuidv4()
+  filename.value = activeWorkbook.name || uuidv4();
   console.log("Workbook created successfully");
 });
 
@@ -76,7 +76,7 @@ async function handleFileChange(event: Event) {
     if (unitId) {
       if (univerAPIInstance?.disposeUnit(unitId)) {
         const fWorkbook = univerAPIInstance.createWorkbook(workbook);
-        filename.value = fWorkbook.id
+        filename.value = fWorkbook.id;
         for (let sheetKey in merges) {
           const fWorksheet = fWorkbook.getSheetBySheetId(sheetKey);
           const ranges = merges[sheetKey];
@@ -102,7 +102,7 @@ function handleExport() {
   <div class="flex min-h-screen flex-col">
     <div class="grid h-12 grid-cols-12 gap-2 p-2">
       <div class="col-span-10 flex items-center">
-        <UIcon name="file-icons:microsoft-excel" class="mr-4" size="25"/>
+        <UIcon name="file-icons:microsoft-excel" class="mr-4" size="25" />
         <span>{{ filename }}</span>
       </div>
       <label
