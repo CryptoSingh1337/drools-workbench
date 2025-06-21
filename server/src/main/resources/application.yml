@@ -1,0 +1,27 @@
+server:
+  port: ${PORT:8080}
+  error:
+    whitelabel:
+      enabled: false
+spring:
+  application:
+    name: drools-workbench-server
+  datasource:
+    url: jdbc:h2:mem:drools-workbench
+    driver-class-name: org.h2.Driver
+  h2:
+    console.enabled: true
+  jpa:
+    hibernate:
+      ddl-auto: create
+    open-in-view: false
+    properties:
+      hibernate.format_sql: true
+    show-sql: true
+  threads:
+    virtual:
+      enabled: true
+
+logging:
+  level:
+    pro.saransh.workbench: DEBUG

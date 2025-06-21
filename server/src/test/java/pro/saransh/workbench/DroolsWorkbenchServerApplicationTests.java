@@ -1,4 +1,4 @@
-package pro.saransh.drools_workbench_server;
+package pro.saransh.workbench;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

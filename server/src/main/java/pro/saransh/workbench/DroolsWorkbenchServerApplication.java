@@ -1,4 +1,4 @@
-package pro.saransh.drools_workbench_server;
+package pro.saransh.workbench;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
