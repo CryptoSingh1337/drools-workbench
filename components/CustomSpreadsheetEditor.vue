@@ -102,7 +102,7 @@ function handleExport() {
   <div class="flex min-h-screen flex-col">
     <div class="grid h-12 grid-cols-12 gap-2 p-2">
       <div class="col-span-10 flex items-center">
-        <UIcon name="file-icons:microsoft-excel mr-4" size="25"/>
+        <UIcon name="file-icons:microsoft-excel" class="mr-4" size="25"/>
         <span>{{ filename }}</span>
       </div>
       <label
