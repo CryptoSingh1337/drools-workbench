@@ -26,6 +26,10 @@ let univerAPIInstance: FUniver | null = null;
 
 const { importFile, exportFile } = useSpreadsheetData();
 
+useHead({
+  title: "Spreadsheet editor"
+})
+
 onMounted(() => {
   const start = performance.now();
   const { univer, univerAPI } = createUniver({
@@ -106,7 +110,9 @@ function handleExport() {
   <div class="flex min-h-screen flex-col">
     <div class="grid h-12 grid-cols-12 gap-2 p-2">
       <div class="col-span-10 flex items-center">
-        <UIcon name="file-icons:microsoft-excel" class="mr-4" size="25" />
+        <NuxtLink class="flex items-center" to="/">
+          <UIcon name="file-icons:microsoft-excel" class="mr-4" size="25" />
+        </NuxtLink>
         <span>{{ filename }}</span>
       </div>
       <label
