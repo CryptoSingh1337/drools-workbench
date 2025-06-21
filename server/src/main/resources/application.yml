@@ -9,6 +9,12 @@ spring:
   datasource:
     url: jdbc:h2:mem:drools-workbench
     driver-class-name: org.h2.Driver
+    hikari:
+      pool-name: default-pool
+      minimum-idle: 2
+      maximum-pool-size: 5
+      auto-commit: true
+      driver-class-name: org.h2.Driver
   h2:
     console.enabled: true
   jpa:
