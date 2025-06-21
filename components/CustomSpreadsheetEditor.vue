@@ -18,12 +18,13 @@ import sheetsHyperLinkEnUS from "@univerjs/presets/preset-sheets-hyper-link/loca
 import "@univerjs/presets/lib/styles/preset-sheets-hyper-link.css";
 
 import { WORKBOOK_DATA } from "@/helper/data";
-import { parseToUniverWorkbookData } from "@/helper/spreadsheet";
 
 const container = ref<HTMLElement | null>(null);
 
 let univerInstance: Univer | null = null;
 let univerAPIInstance: FUniver | null = null;
+
+const { importFile, exportFile } = useSpreadsheetData();
 
 onMounted(() => {
   const { univer, univerAPI } = createUniver({
@@ -47,18 +48,14 @@ onMounted(() => {
   });
   console.log("Univer created successfully");
   console.log("Creating workbook with data:", WORKBOOK_DATA);
-  univerAPI.createWorkbook(WORKBOOK_DATA);
+  univerAPI.createWorkbook();
   univerInstance = univer;
   univerAPIInstance = univerAPI;
   console.log("Workbook created successfully");
   setTimeout(() => {
     const activeWorkbook = univerAPI.getActiveWorkbook();
     console.log("Active workbook:", activeWorkbook);
-    if (activeWorkbook) {
-      const activeSheet = activeWorkbook.getActiveSheet();
-      console.log("Active sheet:", activeSheet);
-    }
-  }, 8000);
+  }, 5000);
 });
 
 onBeforeUnmount(() => {
@@ -73,7 +70,7 @@ async function handleFileChange(event: Event) {
   const file = target.files?.[0];
   if (file) {
     console.log("Selected file:", file.name);
-    const { workbook, merges } = await parseToUniverWorkbookData(file);
+    const { workbook, merges } = await importFile(file);
     const wb = univerAPIInstance?.getActiveWorkbook() as Workbook;
     const unitId = wb.getId();
     if (unitId) {
@@ -89,6 +86,13 @@ async function handleFileChange(event: Event) {
         }
       }
     }
+  }
+}
+
+function handleExport() {
+  if (univerAPIInstance) {
+    const activeWorkbook = univerAPIInstance.getActiveWorkbook();
+    exportFile(activeWorkbook.save());
   }
 }
 </script>
@@ -109,7 +113,7 @@ async function handleFileChange(event: Event) {
         class="hidden"
         @change="handleFileChange"
       />
-      <UButton>Export</UButton>
+      <UButton @click="handleExport">Export</UButton>
     </div>
     <div ref="container" class="spreadsheet-container"></div>
   </div>

@@ -1,49 +1,64 @@
 import * as XLSX from "xlsx";
+import { v4 as uuidv4 } from "uuid";
+import type { IWorkbookData } from "@univerjs/presets";
+import { xlsxToInternalSheets, xlsxToUniver, univerToXlsx } from "@/helper/spreadsheet";
 
 export const useSpreadsheetData = () => {
-  const readExcelFile = async (file: File): Promise<any[][]> => {
-    const arrayBuffer = await file.arrayBuffer();
-    const workbook = XLSX.read(arrayBuffer, { type: "array" });
-    const firstSheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[firstSheetName];
-
-    return XLSX.utils.sheet_to_json(worksheet, {
-      header: 1,
-      defval: null,
-      blankrows: false,
-    }) as any[][];
+  const importFile = async (
+    file: File
+  ): Promise<{
+    workbook: IWorkbookData;
+    merges: Record<string, string[]>;
+  }> => {
+    const buffer = await file.arrayBuffer();
+    const workbook = XLSX.read(buffer, { type: "buffer" });
+    const univerWorkbook: IntermediateWorkbook = {
+      workbook: {
+        name: file.name,
+        sheets: {},
+        sheetOrder: [],
+      },
+    };
+    const sheets = xlsxToInternalSheets(workbook);
+    sheets.forEach((sheet) => {
+      const cellData: IntermediateCell[] = [];
+      for (let rowsKey in sheet.rows) {
+        const row = sheet.rows[rowsKey];
+        for (let cellsKey in row.cells) {
+          const cell = row.cells[cellsKey];
+          cellData.push({
+            r: Number(rowsKey),
+            c: Number(cellsKey),
+            v: {
+              v: cell.text ?? "",
+            },
+          });
+        }
+      }
+      univerWorkbook.workbook.sheets[sheet.name] = {
+        name: sheet.name,
+        cellData: cellData,
+        merges: sheet.merges,
+      };
+      univerWorkbook.workbook.sheetOrder.push(sheet.name);
+    });
+    return xlsxToUniver(univerWorkbook);
   };
 
-  const exportToExcel = (data: any[][], filename: string = "export.xlsx") => {
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet(data);
-    XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+  const exportFile = (univerWorkbook: IWorkbookData) => {
+    const wb = univerToXlsx(univerWorkbook);
+    let filename = univerWorkbook.name;
+    if (filename.length == 0) {
+      filename = uuidv4();
+    }
+    if (!univerWorkbook.name.endsWith(".xlsx")) {
+      filename += ".xlsx";
+    }
+    console.log("file", filename);
     XLSX.writeFile(wb, filename);
   };
-
-  const convertArrayToUniverCells = (data: any[][]) => {
-    const cellData: Record<number, Record<number, any>> = {};
-
-    data.forEach((row, rowIndex) => {
-      if (row.some((cell) => cell !== null && cell !== undefined && cell !== "")) {
-        cellData[rowIndex] = {};
-        row.forEach((cellValue, colIndex) => {
-          if (cellValue !== null && cellValue !== undefined && cellValue !== "") {
-            cellData[rowIndex][colIndex] = {
-              v: cellValue,
-              t: typeof cellValue === "number" ? "n" : "s",
-            };
-          }
-        });
-      }
-    });
-
-    return cellData;
-  };
-
   return {
-    readExcelFile,
-    exportToExcel,
-    convertArrayToUniverCells,
+    importFile,
+    exportFile,
   };
 };

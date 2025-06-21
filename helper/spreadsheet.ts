@@ -1,87 +1,16 @@
 import * as XLSX from "xlsx";
 import { type IWorkbookData, LocaleType } from "@univerjs/presets";
 import type { IWorksheetData } from "@univerjs/presets";
+import type { WorkBook, WorkSheet } from "xlsx";
 
-type Sheet = {
-  name: string;
-  rows: Record<string, Row>;
-  merges: string[];
-};
-
-type Row = {
-  cells: Record<string, Cell>;
-};
-
-type Cell = {
-  text?: string;
-  merge?: [number, number];
-};
-
-type UniverCell = {
-  r: number;
-  c: number;
-  v: {
-    v: string | number | boolean;
-  };
-};
-
-type UniverSheet = {
-  name: string;
-  cellData: UniverCell[];
-  merges: string[];
-};
-
-type UniverWorkbook = {
-  workbook: {
-    sheets: Record<string, UniverSheet>;
-    sheetOrder: string[];
-  };
-};
-
-async function parse(fileData: ArrayBuffer | Buffer | string): Promise<UniverWorkbook> {
-  const workbook = XLSX.read(fileData, { type: "buffer" });
-  const univerWorkbook: UniverWorkbook = {
-    workbook: {
-      sheets: {},
-      sheetOrder: [],
-    },
-  };
-  const sheets = stox(workbook);
-  sheets.forEach((sheet) => {
-    const cellData: UniverCell[] = [];
-    for (let rowsKey in sheet.rows) {
-      const row = sheet.rows[rowsKey];
-      for (let cellsKey in row.cells) {
-        const cell = row.cells[cellsKey];
-        cellData.push({
-          r: Number(rowsKey),
-          c: Number(cellsKey),
-          v: {
-            v: cell.text ?? "",
-          },
-        });
-      }
-    }
-    univerWorkbook.workbook.sheets[sheet.name] = {
-      name: sheet.name,
-      cellData: cellData,
-      merges: sheet.merges,
-    };
-    univerWorkbook.workbook.sheetOrder.push(sheet.name);
-  });
-  return univerWorkbook;
-}
-
-export async function parseToUniverWorkbookData(file: File): Promise<{
+export function xlsxToUniver(data: IntermediateWorkbook): {
   workbook: IWorkbookData;
   merges: Record<string, string[]>;
-}> {
-  const buffer = await file.arrayBuffer();
-  const data = await parse(buffer);
+} {
   const workbook: IWorkbookData = {
-    id: "workbook-1",
+    id: data.workbook.name,
     sheetOrder: data.workbook.sheetOrder,
-    name: "Workbook",
+    name: data.workbook.name,
     appVersion: "",
     locale: LocaleType.EN_US,
     styles: {},
@@ -130,8 +59,8 @@ export async function parseToUniverWorkbookData(file: File): Promise<{
       }
       if (String(cell.v.v).startsWith("=")) {
         workbook.sheets[sheetKey].cellData[rowKey][colKey] = {
-          f: cell.v.v
-        }
+          f: cell.v.v,
+        };
       } else {
         workbook.sheets[sheetKey].cellData[rowKey][colKey] = cell.v;
       }
@@ -143,7 +72,7 @@ export async function parseToUniverWorkbookData(file: File): Promise<{
   };
 }
 
-export function stox(wb: XLSX.WorkBook): Sheet[] {
+export function xlsxToInternalSheets(wb: XLSX.WorkBook): Sheet[] {
   let out: Sheet[] = [];
   wb.SheetNames.forEach(function (name: string) {
     let o: Sheet = {
@@ -195,6 +124,82 @@ export function stox(wb: XLSX.WorkBook): Sheet[] {
       o.merges[i] = XLSX.utils.encode_range(merge);
     });
     out.push(o);
+  });
+  return out;
+}
+
+export function univerToXlsx(workbookData: IWorkbookData): XLSX.WorkBook {
+  const out: WorkBook = XLSX.utils.book_new();
+  const sheets = workbookData.sheets;
+  Object.values(sheets).forEach((sheet) => {
+    const ws: WorkSheet = {};
+    let minCoord = { r: Infinity, c: Infinity };
+    let maxCoord = { r: 0, c: 0 };
+
+    const cellData = sheet.cellData || {};
+
+    // Iterate over rows
+    Object.keys(cellData).forEach((rowKey) => {
+      const row = cellData[rowKey];
+      const r = parseInt(rowKey);
+
+      // Iterate over columns in that row
+      Object.keys(row).forEach((colKey) => {
+        const c = parseInt(colKey);
+        const cell = row[colKey];
+
+        const cellRef = XLSX.utils.encode_cell({ r, c });
+
+        // Update bounds
+        if (r < minCoord.r) minCoord.r = r;
+        if (c < minCoord.c) minCoord.c = c;
+        if (r > maxCoord.r) maxCoord.r = r;
+        if (c > maxCoord.c) maxCoord.c = c;
+
+        // Determine value and type
+        let value = cell.v ?? cell.m ?? "";
+        let type = "s";
+
+        if (value === "") {
+          type = "z";
+        } else if (typeof value === "number" || !isNaN(Number(value))) {
+          value = Number(value);
+          type = "n";
+        } else if (
+          value.toString().toLowerCase() === "true" ||
+          value.toString().toLowerCase() === "false"
+        ) {
+          value = value.toString().toLowerCase() === "true";
+          type = "b";
+        }
+
+        ws[cellRef] = { v: value, t: type };
+
+        // Formula
+        if (cell.f) {
+          ws[cellRef].f = cell.f;
+        }
+      });
+    });
+
+    // Merges
+    if (sheet.mergeData) {
+      ws["!merges"] = [];
+      Object.values(sheet.mergeData).forEach((merge) => {
+        ws["!merges"]?.push({
+          s: { r: merge.startRow, c: merge.startColumn },
+          e: { r: merge.endRow, c: merge.endColumn },
+        });
+      });
+    }
+
+    // Set sheet bounds
+    if (minCoord.r <= maxCoord.r && minCoord.c <= maxCoord.c) {
+      ws["!ref"] = XLSX.utils.encode_range({ s: minCoord, e: maxCoord });
+    } else {
+      ws["!ref"] = "A1";
+    }
+    XLSX.utils.book_append_sheet(out, ws, sheet.name);
   });
   return out;
 }

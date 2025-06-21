@@ -5,7 +5,7 @@ declare module "@univerjs/presets" {
 
   export interface FUniver {
     dispose(): void;
-    createWorkbook(config: any): any;
+    createWorkbook(config?: any): any;
     getActiveWorkbook(): any;
     onWorkbookChange(callback: (workbook: any) => void): void;
     disposeUnit(unitId: string): boolean;
