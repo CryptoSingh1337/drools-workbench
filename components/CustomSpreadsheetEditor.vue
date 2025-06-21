@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { onMounted, onBeforeUnmount, ref } from "vue";
+import { v4 as uuidv4 } from "uuid";
 
 import { createUniver, defaultTheme, LocaleType, merge } from "@univerjs/presets";
 import type { FUniver, Univer } from "@univerjs/presets";
@@ -20,6 +21,7 @@ import "@univerjs/presets/lib/styles/preset-sheets-hyper-link.css";
 import { WORKBOOK_DATA } from "@/helper/data";
 
 const container = ref<HTMLElement | null>(null);
+const filename = ref<string>('')
 
 let univerInstance: Univer | null = null;
 let univerAPIInstance: FUniver | null = null;
@@ -51,11 +53,9 @@ onMounted(() => {
   univerAPI.createWorkbook();
   univerInstance = univer;
   univerAPIInstance = univerAPI;
+  const activeWorkbook = univerAPI.getActiveWorkbook();
+  filename.value = activeWorkbook.name || uuidv4()
   console.log("Workbook created successfully");
-  setTimeout(() => {
-    const activeWorkbook = univerAPI.getActiveWorkbook();
-    console.log("Active workbook:", activeWorkbook);
-  }, 5000);
 });
 
 onBeforeUnmount(() => {
@@ -76,6 +76,7 @@ async function handleFileChange(event: Event) {
     if (unitId) {
       if (univerAPIInstance?.disposeUnit(unitId)) {
         const fWorkbook = univerAPIInstance.createWorkbook(workbook);
+        filename.value = fWorkbook.id
         for (let sheetKey in merges) {
           const fWorksheet = fWorkbook.getSheetBySheetId(sheetKey);
           const ranges = merges[sheetKey];
@@ -100,6 +101,10 @@ function handleExport() {
 <template>
   <div class="flex min-h-screen flex-col">
     <div class="grid h-12 grid-cols-12 gap-2 p-2">
+      <div class="col-span-10 flex items-center">
+        <UIcon name="file-icons:microsoft-excel mr-4" size="25"/>
+        <span>{{ filename }}</span>
+      </div>
       <label
         for="file-upload"
         class="placeholder:text-dimmed text-highlighted bg-elevated ring-accented focus-visible:ring-primary w-full gap-1.5 rounded-md border-0 px-2.5 py-1.5 text-sm ring transition-colors ring-inset focus:outline-none focus-visible:ring-2 focus-visible:ring-inset disabled:cursor-not-allowed disabled:opacity-75"
