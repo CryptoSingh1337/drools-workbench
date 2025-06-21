@@ -1,3 +1,5 @@
 <template>
-  <SpreadsheetEditor />
+  <ClientOnly>
+    <SpreadsheetEditor />
+  </ClientOnly>
 </template>

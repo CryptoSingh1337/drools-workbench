@@ -2,39 +2,44 @@
 export default defineNuxtConfig({
   compatibilityDate: "2025-05-15",
   devtools: { enabled: true },
-  // Import Univer CSS
   css: ["@univerjs/presets/lib/styles/preset-sheets-core.css", "@/assets/css/main.css"],
-  // Ensure proper transpilation
   build: {
     transpile: ["@univerjs/presets"],
   },
   modules: ["@nuxt/ui", "@pinia/nuxt"],
-  // Vite optimizations
   vite: {
     optimizeDeps: {
-      include: ["@univerjs/presets", "xlsx", "react", "react-dom"],
-      // exclude: [
-      //   '@univerjs/presets/preset-sheets-core'
-      // ]
+      include: ["@univerjs/presets", "xlsx", "react", "react-dom", "exceljs", "uuid"],
     },
-    // Handle React module resolution issues
     resolve: {
       alias: {
         react: "react",
         "react-dom": "react-dom",
       },
     },
-    // Handle potential module resolution issues
     define: {
       global: "globalThis",
       "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV || "development"),
     },
-    // Ensure proper React handling
     esbuild: {
       jsx: "automatic",
     },
   },
-
-  // SSR configuration
-  ssr: false, // Disable SSR for client-side spreadsheet functionality
+  ssr: true,
+  app: {
+    head: {
+      htmlAttrs: {
+        lang: "en",
+      },
+      meta: [
+        { charset: "utf-8" },
+        { name: "viewport", content: "width=device-width, initial-scale=1" },
+        { name: "title", content: "Drools Workbench" },
+      ],
+    },
+  },
+  sourcemap: {
+    client: false,
+    server: false,
+  },
 });

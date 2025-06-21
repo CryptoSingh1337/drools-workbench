@@ -27,8 +27,8 @@ let univerAPIInstance: FUniver | null = null;
 const { importFile, exportFile } = useSpreadsheetData();
 
 useHead({
-  title: "Spreadsheet editor"
-})
+  title: "Spreadsheet editor",
+});
 
 onMounted(() => {
   const start = performance.now();
